@@ -10,21 +10,36 @@ const { TEXT_BANK } = require('./textBank');
 
 const app = express();
 const server = http.createServer(app);
-const allowedOrigins = (process.env.CLIENT_URLS || process.env.CLIENT_URL || 'http://localhost:5173,http://localhost:3000')
+const defaultClientOrigins = 'http://localhost:5173,http://localhost:3000';
+const normalizeOrigin = (origin) => String(origin || '').trim().replace(/\/$/, '');
+const allowedOrigins = (process.env.CLIENT_URLS || process.env.CLIENT_URL || defaultClientOrigins)
   .split(',')
-  .map((origin) => origin.trim())
+  .map(normalizeOrigin)
   .filter(Boolean);
 
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  return allowedOrigins.includes(normalizeOrigin(origin));
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      return callback(null, true);
+    }
+    console.warn(`Blocked by CORS: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST'],
+  credentials: true
+};
+
 const io = socketIo(server, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST'],
-    credentials: true
-  }
+  cors: corsOptions
 });
 
 // Middleware
-app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes
