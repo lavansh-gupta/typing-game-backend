@@ -24,9 +24,11 @@ class RoomManager {
     this.rooms[roomCode] = {
       roomCode,
       hostSocketId: socketId,
+      gameMode: 'sprint',
       gameStarted: false,
       gameText: '',
       startTime: null,
+      sprintTimeoutId: null,
       players: [
         {
           id: uuidv4(),
