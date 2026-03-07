@@ -225,25 +225,41 @@ io.on('connection', (socket) => {
       const player = room.players.find((p) => p.socketId === socket.id);
       if (!player) return;
 
-      player.typed = typed;
-      player.characterIndex = characterIndex;
+      const incomingTyped = typeof typed === 'string' ? typed : '';
+      let effectiveTyped = incomingTyped;
 
-      const progress = gameLogic.calculateProgress(typed, room.gameText);
-      const wpm = gameLogic.calculateWPM(typed, room.startTime);
-      const accuracy = gameLogic.calculateAccuracy(typed, room.gameText);
+      // In sprint mode, only a correct prefix is accepted.
+      if (room.gameMode === gameLogic.GAME_MODES.SPRINT) {
+        let validPrefixLength = 0;
+        while (
+          validPrefixLength < incomingTyped.length &&
+          validPrefixLength < room.gameText.length &&
+          incomingTyped[validPrefixLength] === room.gameText[validPrefixLength]
+        ) {
+          validPrefixLength++;
+        }
+        effectiveTyped = incomingTyped.slice(0, validPrefixLength);
+      }
+
+      player.typed = effectiveTyped;
+      player.characterIndex = Math.min(characterIndex || 0, effectiveTyped.length);
+
+      const progress = gameLogic.calculateProgress(effectiveTyped, room.gameText);
+      const wpm = gameLogic.calculateWPM(effectiveTyped, room.startTime);
+      const accuracy = gameLogic.calculateAccuracy(effectiveTyped, room.gameText);
 
       player.wpm = wpm;
       player.accuracy = accuracy;
       player.progress = progress;
 
-      const isFinished = gameLogic.isPlayerFinished(typed, room.gameText, room.gameMode);
+      const isFinished = gameLogic.isPlayerFinished(effectiveTyped, room.gameText, room.gameMode);
 
       if (isFinished && !player.finished && room.gameMode !== gameLogic.GAME_MODES.ENDLESS) {
         player.finished = true;
         player.finishTime = Date.now();
 
         const timeElapsed = (player.finishTime - room.startTime) / 1000;
-        const finalStats = gameLogic.calculateFinalStats(typed, room.gameText, timeElapsed);
+        const finalStats = gameLogic.calculateFinalStats(effectiveTyped, room.gameText, timeElapsed);
 
         player.finalWpm = finalStats.wpm;
         player.finalAccuracy = finalStats.accuracy;
