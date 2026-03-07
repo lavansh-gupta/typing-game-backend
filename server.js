@@ -133,6 +133,9 @@ io.on('connection', (socket) => {
     try {
       const room = roomManager.getRoom(roomCode);
       if (!room) throw new Error('Room not found');
+      if (socket.id !== room.hostSocketId) {
+        throw new Error('Only the room creator can start the game and choose mode');
+      }
 
       const selectedMode = sanitizeMode(gameMode || room.gameMode);
       const selectedText = getTextForMode(selectedMode);
