@@ -10,7 +10,7 @@ const { SPRINT_TEXTS, MARATHON_TEXTS, ENDLESS_TEXTS } = require('./textBank');
 
 const app = express();
 const server = http.createServer(app);
-const defaultClientOrigins = 'http://localhost:5173,http://localhost:3000,https://typing-game-frontend-five.vercel.app';
+const defaultClientOrigins = 'http://localhost:5173,http://localhost:3000,https://typing-game-frontend-five.vercel.app,https://typing-game-frontend-git-main-lavansh-guptas-projects.vercel.app';
 const normalizeOrigin = (origin) => String(origin || '').trim().replace(/\/$/, '');
 const allowedOrigins = (process.env.CLIENT_URLS || process.env.CLIENT_URL || defaultClientOrigins)
   .split(',')
