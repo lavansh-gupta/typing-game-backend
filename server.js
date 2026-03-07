@@ -10,7 +10,7 @@ const { SPRINT_TEXTS, MARATHON_TEXTS, ENDLESS_TEXTS } = require('./textBank');
 
 const app = express();
 const server = http.createServer(app);
-const defaultClientOrigins = 'http://localhost:5173,http://localhost:3000';
+const defaultClientOrigins = 'http://localhost:5173,http://localhost:3000,https://typing-game-frontend-five.vercel.app';
 const normalizeOrigin = (origin) => String(origin || '').trim().replace(/\/$/, '');
 const allowedOrigins = (process.env.CLIENT_URLS || process.env.CLIENT_URL || defaultClientOrigins)
   .split(',')
@@ -19,7 +19,20 @@ const allowedOrigins = (process.env.CLIENT_URLS || process.env.CLIENT_URL || def
 
 const isOriginAllowed = (origin) => {
   if (!origin) return true;
-  return allowedOrigins.includes(normalizeOrigin(origin));
+  const normalizedOrigin = normalizeOrigin(origin);
+  if (allowedOrigins.includes(normalizedOrigin)) return true;
+
+  // Allow Vercel preview/prod frontend domains when explicitly enabled.
+  if (process.env.ALLOW_VERCEL_ORIGINS === 'true') {
+    try {
+      const host = new URL(normalizedOrigin).hostname;
+      if (host.endsWith('.vercel.app')) return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  return false;
 };
 
 const corsOptions = {
