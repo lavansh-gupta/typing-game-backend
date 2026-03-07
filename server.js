@@ -129,6 +129,28 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('setGameMode', ({ roomCode, gameMode }, callback) => {
+    try {
+      const room = roomManager.getRoom(roomCode);
+      if (!room) throw new Error('Room not found');
+      if (room.gameStarted) throw new Error('Cannot change mode after game starts');
+      if (socket.id !== room.hostSocketId) {
+        throw new Error('Only the room creator can choose mode');
+      }
+
+      const selectedMode = sanitizeMode(gameMode);
+      room.gameMode = selectedMode;
+
+      io.to(roomCode).emit('gameModeUpdated', {
+        gameMode: selectedMode
+      });
+
+      callback({ success: true, gameMode: selectedMode });
+    } catch (error) {
+      callback({ success: false, error: error.message });
+    }
+  });
+
   socket.on('startGame', ({ roomCode, gameMode }, callback) => {
     try {
       const room = roomManager.getRoom(roomCode);
@@ -137,7 +159,7 @@ io.on('connection', (socket) => {
         throw new Error('Only the room creator can start the game and choose mode');
       }
 
-      const selectedMode = sanitizeMode(gameMode || room.gameMode);
+      const selectedMode = sanitizeMode(room.gameMode);
       const selectedText = getTextForMode(selectedMode);
 
       room.gameMode = selectedMode;
